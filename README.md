@@ -18,6 +18,21 @@ Install all prerequisites with the requirements file:
 ```bash
 pip install -r requirements.txt
 ```
+
+### All in One:
+
+```bash
+git clone https://github.com/Yedi278/Qibo_QEC.git
+
+cd Qibo_QEC
+
+python -m venv .venv
+
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
 ---
 
 **Contact:** y.edirisinghemudi@campus.unimib.it
