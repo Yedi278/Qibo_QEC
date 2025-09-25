@@ -1,0 +1,4 @@
+numpy>=2.2.6
+qibo>=0.2.20
+qibojit>=0.1.11
+matplotlib
