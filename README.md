@@ -19,18 +19,20 @@ Install all prerequisites with the requirements file:
 pip install -r requirements.txt
 ```
 
-### All in One:
+### Install with Virtual environment:
 
 ```bash
+sudo apt install python3-venv
+
 git clone https://github.com/Yedi278/Qibo_QEC.git
 
 cd Qibo_QEC
 
-python -m venv .venv
+python3 -m venv .venv
 
 source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements.txt 
 ```
 
 ---
