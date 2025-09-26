@@ -34,8 +34,8 @@ class QEC:
         for i in range(circuit.nqubits):
             for j in range(3):
                 self.wire_names.append(f"q{i}{j}")
-            self.wire_names.append(f"a0{i}")
-            self.wire_names.append(f"a1{i}")
+            self.wire_names.append(f"a{i}0")
+            self.wire_names.append(f"a{i}1")
                 
         # Initialize the encoded circuit
         self.encoded_circuit = Circuit(self.encoded_nqb, wire_names=self.wire_names)
