@@ -8,7 +8,8 @@ class QEC:
 
         self.code_type:str = code_type
         self.encoded_circuit:Circuit = None
-        self.encoded_nqb:int = 0
+        self.encoded_nqb:int = 0    # Number of qubits in the encoded circuit
+        self.wire_names:list[str] = [] # Wire names for the encoded circuit
 
         print(f"Initialized QEC with code type: {self.code_type}")
 
@@ -45,8 +46,19 @@ class QEC:
 
         # Map original gates to the encoded circuit
         
-        print(circuit.associate_gates_with_parameters())
-        ##
+        for gate in circuit.queue:
+            gate = gate.__dict__
+
+            match gate["name"]:
+                
+                case "x":
+                    target = gate["_target_qubits"][0]
+                    self.encoded_circuit.add(gates.X(target*5))
+                    self.encoded_circuit.add(gates.X(target*5+1))
+                    self.encoded_circuit.add(gates.X(target*5+2))
+
+                case _:
+                    print(f"Gate {gate['name']} not supported in bit-flip code yet.")
 
         # Stabilizer measurements: Measure syndromes using ancilla qubits
         for i in range(circuit.nqubits):
@@ -63,5 +75,67 @@ class QEC:
             self.encoded_circuit.add(gates.CZ(i*5+2, i*5+4))
             self.encoded_circuit.add(gates.H(i*5+4))
 
+        # Aplly corrections based on syndrome measurements
+
+        for i in range(circuit.nqubits):
+            
+            # Correct based on ancilla measurements
+            self.encoded_circuit.add(gates.CNOT(i*5+3, i*5))
+            self.encoded_circuit.add(gates.CNOT(i*5+3, i*5+1))
+            self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+1))
+            self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+2))
 
         return self.encoded_circuit
+    
+
+
+
+
+
+
+
+    
+if __name__ == "__main__":
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    plt.style.use('dark_background')    # Use dark background for plots
+
+    import qibo
+    assert qibo.__version__ >= "0.2.20", "This script requires qibo version 0.2.20 or higher."
+
+    from qibo import Circuit, gates
+    from qibo.gates import *
+
+    from qibo.ui import plot_circuit, plot_density_hist, visualize_state
+
+    from qibo_qec import QEC
+
+    custom_style = {                    # Define a custom style for the circuit plot
+        "facecolor" : "#000000",
+        "edgecolor" : "#ffffff",
+        "linecolor" : "#ffffff",
+        "textcolor" : "#ffffff",
+        "fillcolor" : "#c41b1b",
+        "gatecolor" : "#9000ff",
+        "controlcolor" : "#360000"
+    }
+
+    # Create a simple quantum circuit
+
+    qc = Circuit(1)
+
+    qc.add(gates.X(0))
+
+    plot_circuit(qc, style=custom_style)
+    plt.title("Original Circuit before QEC")
+
+    plot_circuit(qc, style=custom_style)
+    plt.title("Original Circuit before QEC")
+
+    qec = QEC(code_type="bit_flip")
+    encoded_circuit = qec.apply_code(qc)
+
+    plot_circuit(encoded_circuit, style=custom_style)
+    plt.title("Circuit after applying Bit-Flip QEC")
+    plt.savefig("tests/etc/circuit_after_qec.png", dpi=300, bbox_inches='tight')
