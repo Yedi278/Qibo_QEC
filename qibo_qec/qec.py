@@ -1,5 +1,9 @@
 from qibo import Circuit, gates
 
+class QECCircuit(Circuit):
+    """A subclass of qibo.Circuit for Quantum Error Correction (QEC) codes."""
+    def __init__(self, nqubits:int, wire_names:list[str]=None):
+        pass
 
 class QEC:
     """A class for Quantum Error Correction (QEC) codes."""
@@ -10,6 +14,7 @@ class QEC:
         self.encoded_circuit:Circuit = None
         self.encoded_nqb:int = 0    # Number of qubits in the encoded circuit
         self.wire_names:list[str] = [] # Wire names for the encoded circuit
+        self.meas_target:list[int] = [] # List to store measurement gates targets
 
         print(f"Initialized QEC with code type: {self.code_type}")
 
@@ -46,8 +51,8 @@ class QEC:
 
         # Map original gates to the encoded circuit
         
-        for gate in circuit.queue:
-            gate = gate.__dict__
+        for gate_ in circuit.queue:
+            gate = gate_.__dict__
 
             match gate["name"]:
                 
@@ -56,6 +61,16 @@ class QEC:
                     self.encoded_circuit.add(gates.X(target*5))
                     self.encoded_circuit.add(gates.X(target*5+1))
                     self.encoded_circuit.add(gates.X(target*5+2))
+
+                case "z":
+                    target = gate["_target_qubits"][0]
+                    self.encoded_circuit.add(gates.Z(target*5))
+                    self.encoded_circuit.add(gates.Z(target*5+1))
+                    self.encoded_circuit.add(gates.Z(target*5+2))
+                
+                case "measure":
+                    self.meas_target.append(gate['_target_qubits'][0])  # Store measurement target for later
+                
 
                 case _:
                     print(f"Gate {gate['name']} not supported in bit-flip code yet.")
@@ -84,6 +99,13 @@ class QEC:
             self.encoded_circuit.add(gates.CNOT(i*5+3, i*5+1))
             self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+1))
             self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+2))
+
+        # Final measurements if the original circuit had measurements
+        if self.meas_target:
+            for target in self.meas_target:
+                self.encoded_circuit.add(gates.M(target*5))
+                self.encoded_circuit.add(gates.M(target*5+1))
+                self.encoded_circuit.add(gates.M(target*5+2))
 
         return self.encoded_circuit
     
@@ -139,3 +161,4 @@ if __name__ == "__main__":
     plot_circuit(encoded_circuit, style=custom_style)
     plt.title("Circuit after applying Bit-Flip QEC")
     plt.savefig("tests/etc/circuit_after_qec.png", dpi=300, bbox_inches='tight')
+    
