@@ -1,29 +1,6 @@
 from qibo import Circuit, gates
 
-class Qec_Circuit(Circuit):
-    """A subclass of qibo.Circuit for error corrected circuits."""
-
-    def __init__(self, circuit:Circuit, nqubits:int=0, wire_names:list[str]=[]):
-        super().__init__(nqubits=nqubits, wire_names=wire_names)
-
-        self.circuit = circuit
-        self.qec_circuit = Circuit(nqubits=nqubits, wire_names=wire_names)
-
-    def __init__(self, nqubits:int=0, wire_names:list[str]=[]):
-        super().__init__(nqubits=nqubits, wire_names=wire_names)
-
-        self.qec_circuit = Circuit(nqubits=nqubits, wire_names=wire_names)
-
-    def __call__(self, initial_state=None, nshots=1024, **kwargs):
-
-        results = self.execute(initial_state=initial_state, nshots=nshots, kwargs=kwargs)
-
-        results_dict = results.__dict__
-        print("Keys in results dict:", *results_dict.keys(), sep="\n")
-        print(results_dict['_state'])
-
-        return results
-    
+from qec_circuit import Qec_Circuit
 
 class QEC:
     """A class for Quantum Error Correction (QEC) codes."""
@@ -47,7 +24,7 @@ class QEC:
 
         return self.encoded_circuit
 
-    def bit_flip_code(self, circuit:Circuit) -> Circuit|None:
+    def bit_flip_code(self, circuit:Circuit) -> Qec_Circuit:
 
         self.encoded_nqb = circuit.nqubits * 3 + 2 * circuit.nqubits
         print(f"Applying {self.code_type} code to a circuit with {self.encoded_nqb} qubit(s).")
@@ -86,6 +63,12 @@ class QEC:
                     self.encoded_circuit.add(gates.Z(target*5))
                     self.encoded_circuit.add(gates.Z(target*5+1))
                     self.encoded_circuit.add(gates.Z(target*5+2))
+
+                case "h":
+                    target = gate["_target_qubits"][0]
+                    self.encoded_circuit.add(gates.H(target*5))
+                    self.encoded_circuit.add(gates.H(target*5+1))
+                    self.encoded_circuit.add(gates.H(target*5+2))
                 
                 case "measure":
                     self.meas_target.append(gate['_target_qubits'][0])  # Store measurement target for later
@@ -132,9 +115,6 @@ class QEC:
 
 
 
-
-
-
     
 if __name__ == "__main__":
 
@@ -162,9 +142,9 @@ if __name__ == "__main__":
 
     # Create a simple quantum circuit
 
-    qc = Circuit(3)
+    qc = Circuit(2)
 
-    qc.add(gates.X(0))
+    qc.add(gates.H(0))
     qc.add(gates.M(0))
 
     plot_circuit(qc, style=custom_style)
@@ -183,7 +163,7 @@ if __name__ == "__main__":
     res = encoded_circuit(nshots=10)
     # visualize_state(res)
 
-    print("Results of simulation:\t",res)
+    # print("Results of simulation:\t",res)
 
     # plt.title("State after applying Bit-Flip QEC")
     # plt.savefig("tests/etc/results.png", dpi=300, bbox_inches='tight')
