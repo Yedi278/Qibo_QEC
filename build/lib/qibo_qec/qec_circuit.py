@@ -20,6 +20,6 @@ class Qec_Circuit(Circuit):
 
         results_dict = results.__dict__
 
-        print((results_dict['_state']))
+        print((results_dict))
 
         return results

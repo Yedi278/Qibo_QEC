@@ -15,7 +15,8 @@ class QEC:
 
         print(f"Initialized QEC with code type: {self.code_type}")
 
-    def apply_code(self, circuit:Circuit) -> Circuit|None:
+    def apply_code(self, circuit:Circuit) -> Qec_Circuit:
+        """Applies the selected QEC code to the given quantum circuit."""
 
         match self.code_type:
 
@@ -144,7 +145,7 @@ if __name__ == "__main__":
 
     qc = Circuit(2)
 
-    qc.add(gates.H(0))
+    qc.add(gates.H(1))
     qc.add(gates.M(0))
 
     plot_circuit(qc, style=custom_style)
@@ -161,9 +162,11 @@ if __name__ == "__main__":
     plt.savefig("tests/etc/circuit_after_qec.png", dpi=300, bbox_inches='tight')
     
     res = encoded_circuit(nshots=10)
-    # visualize_state(res)
+
+    # print(res)
+    visualize_state(res)
+    plt.savefig("tests/etc/results.png", dpi=300, bbox_inches='tight')
 
     # print("Results of simulation:\t",res)
 
     # plt.title("State after applying Bit-Flip QEC")
-    # plt.savefig("tests/etc/results.png", dpi=300, bbox_inches='tight')
