@@ -1,6 +1,5 @@
 from qibo import Circuit, gates
-
-from qec_circuit import Qec_Circuit
+from .qec_circuit import Qec_Circuit
 
 class QEC:
     """A class for Quantum Error Correction (QEC) codes."""
@@ -15,17 +14,18 @@ class QEC:
 
         print(f"Initialized QEC with code type: {self.code_type}")
 
-    def apply_code(self, circuit:Circuit) -> Qec_Circuit:
+    def apply_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
         """Applies the selected QEC code to the given quantum circuit."""
 
         match self.code_type:
 
             case "bit_flip":
-                return self.bit_flip_code(circuit)
+                return self.bit_flip_code(circuit, test_gates, correction)
 
         return self.encoded_circuit
 
-    def bit_flip_code(self, circuit:Circuit) -> Qec_Circuit:
+    def bit_flip_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
+        """Applies the Bit-Flip QEC code to the given quantum circuit."""
 
         self.encoded_nqb = circuit.nqubits * 3 + 2 * circuit.nqubits
         print(f"Applying {self.code_type} code to a circuit with {self.encoded_nqb} qubit(s).")
@@ -45,6 +45,12 @@ class QEC:
         for i in range(circuit.nqubits):
             self.encoded_circuit.add(gates.CNOT(i*5, i*5+1))
             self.encoded_circuit.add(gates.CNOT(i*5, i*5+2))
+
+        # add test error gates if provided
+
+        if test_gates is not None:
+            for gate in test_gates:
+                self.encoded_circuit.add(gate)
 
         # Map original gates to the encoded circuit
         
@@ -95,13 +101,14 @@ class QEC:
 
         # Aplly corrections based on syndrome measurements
 
-        for i in range(circuit.nqubits):
-            
-            # Correct based on ancilla measurements
-            self.encoded_circuit.add(gates.CNOT(i*5+3, i*5))
-            self.encoded_circuit.add(gates.CNOT(i*5+3, i*5+1))
-            self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+1))
-            self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+2))
+        if correction:
+            for i in range(circuit.nqubits):
+                
+                # Correct based on ancilla measurements
+                self.encoded_circuit.add(gates.CNOT(i*5+3, i*5))
+                self.encoded_circuit.add(gates.CNOT(i*5+3, i*5+1))
+                self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+1))
+                self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+2))
 
         # Final measurements if the original circuit had measurements
         if self.meas_target:
@@ -146,6 +153,7 @@ if __name__ == "__main__":
     qc = Circuit(2)
 
     qc.add(gates.H(1))
+    qc.add(gates.CNOT(1,0))
     qc.add(gates.M(0))
 
     plot_circuit(qc, style=custom_style)
@@ -155,6 +163,11 @@ if __name__ == "__main__":
     plt.title("Original Circuit before QEC")
 
     qec = QEC(code_type="bit_flip")
+
+    plot_circuit(qc, style=custom_style)
+    plt.title("Original Circuit before QEC")
+    plt.savefig("tests/etc/original_circuit.png", dpi=300, bbox_inches='tight')
+
     encoded_circuit:Qec_Circuit = qec.apply_code(qc)
 
     plot_circuit(encoded_circuit, style=custom_style)
