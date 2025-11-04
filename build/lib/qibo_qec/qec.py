@@ -103,12 +103,18 @@ class QEC:
 
         if correction:
             for i in range(circuit.nqubits):
-                
-                # Correct based on ancilla measurements
-                self.encoded_circuit.add(gates.CNOT(i*5+3, i*5))
+                # Correction based on ancilla measurements
                 self.encoded_circuit.add(gates.CNOT(i*5+3, i*5+1))
+                self.encoded_circuit.add(gates.CNOT(i*5+3, i*5+2))
+
+                self.encoded_circuit.add(gates.CNOT(i*5+4, i*5))
                 self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+1))
-                self.encoded_circuit.add(gates.CNOT(i*5+4, i*5+2))
+                
+                self.encoded_circuit.add(gates.X(i*5))
+                self.encoded_circuit.add(gates.X(i*5+1))
+                self.encoded_circuit.add(gates.X(i*5+2))
+
+
 
         # Final measurements if the original circuit had measurements
         if self.meas_target:
