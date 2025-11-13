@@ -39,7 +39,7 @@ class QEC:
             self.wire_names.append(f"a{i}1")
 
         # Initialize the encoded circuit
-        self.encoded_circuit = Qec_Circuit(self.encoded_nqb, wire_names=self.wire_names)
+        self.encoded_circuit = Qec_Circuit(circuit=circuit, nqubits=self.encoded_nqb, wire_names=self.wire_names)
 
         # Encoding: Apply CNOT gates to encode each qubit into three qubits
         for i in range(circuit.nqubits):

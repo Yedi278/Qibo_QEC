@@ -3,4 +3,3 @@
 
 from .qec import QEC
 from .qec_circuit import Qec_Circuit
-from .qec_resutls import Qec_Results
