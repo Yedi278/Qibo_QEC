@@ -76,6 +76,13 @@ class QEC:
                     self.encoded_circuit.add(gates.H(target*5))
                     self.encoded_circuit.add(gates.H(target*5+1))
                     self.encoded_circuit.add(gates.H(target*5+2))
+
+                case "cx":
+                    control = gate["_control_qubits"][0]
+                    target = gate["_target_qubits"][0]
+                    self.encoded_circuit.add(gates.CNOT(control*5, target*5))
+                    self.encoded_circuit.add(gates.CNOT(control*5+1, target*5+1))
+                    self.encoded_circuit.add(gates.CNOT(control*5+2, target*5+2))
                 
                 case "measure":
                     self.meas_target.append(gate['_target_qubits'][0])  # Store measurement target for later
