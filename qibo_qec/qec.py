@@ -146,16 +146,17 @@ class QEC:
         for i in range(circuit.nqubits):
             self.encoded_circuit.add(gates.CNOT(i*3, i*3+1))
             self.encoded_circuit.add(gates.CNOT(i*3, i*3+2))
-            self.encoded_circuit.add( [ gates.H(i*3), gates.H(i*3+1), gates.H(i*3+2) ])
+            self.encoded_circuit.add( [ gates.H(i*3), 
+                                        gates.H(i*3+1), 
+                                        gates.H(i*3+2) 
+                                        ] )
 
         # add test error gates if provided
-
         if test_gates is not None:
             for gate in test_gates:
                 self.encoded_circuit.add(gate)
-
-        # Map original gates to the encoded circuit
         
+        # Map original gates to the encoded circuit
         for gate_ in circuit.queue:
             gate = gate_.__dict__
 
@@ -188,7 +189,6 @@ class QEC:
                 
                 case "measure":
                     self.meas_target.append(gate['_target_qubits'][0])  # Store measurement target for later
-                
 
                 case _:
                     print(f"Gate {gate['name']} not supported in bit-flip code yet.")
