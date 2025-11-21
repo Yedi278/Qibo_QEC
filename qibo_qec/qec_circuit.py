@@ -1,28 +1,80 @@
-from qibo import Circuit, gates
+from qibo import Circuit
 from qibo.result import CircuitResult
-from qibo.backends import _check_backend, _Global
+import numpy as np
 
 class Qec_Circuit(Circuit):
     """A subclass of qibo.Circuit for error corrected circuits."""
 
     def __init__(self, 
-                circuit:Circuit=None, 
+                circuit:Circuit, 
                 nqubits:int=None, 
                 accelerators=None, 
                 density_matrix: bool = False,
-                wire_names:list[str]=[],
+                wire_names:list[str]=None,
                 **kwargs):
+        
         super().__init__(nqubits=nqubits, accelerators=accelerators, density_matrix=density_matrix, wire_names=wire_names, **kwargs)
 
         self.circuit = circuit
         self.qec_circuit = Circuit(nqubits=nqubits, wire_names=wire_names)
         self.results = None
 
+    def generate_bitstring_combinations(self, n):
+        """Generate all bitstring combinations given bitstring length `n`."""
+        bitstrings = []
+        for i in range(2**n):
+            bitstrings.append(format(i, f"0{n}b"))
+        return bitstrings
+
+    def transform_initial_state(self, initial_state):
+        bit_strings = self.generate_bitstring_combinations(self.nqubits)
+        num_states_new = len(bit_strings)
+        num_states_old = len(initial_state)
+        nqubits_original = int(np.log2(num_states_old))
+        print("Original circuit has {} qubits".format(nqubits_original))
+
+        initial_state_transformed = np.zeros(num_states_new, dtype=complex)
+
+        ratio = int(self.nqubits / nqubits_original)
+
+        if initial_state is not None:
+            for i in range(num_states_old):
+
+                if i == 0:
+                    print( bit_strings[ 0 ] )
+
+                else:
+                    if ratio*i <= ratio*(nqubits_original):
+                        
+                        print( bit_strings[ 2**(ratio*i -1) ] )
+
+                    else:
+                        index = (ratio * i -1) % (ratio * nqubits_original)                        
+                        print( bit_strings[ np.power(2, (ratio*nqubits_original -1)) + np.power(2, index*(i-nqubits_original)) ] )
+        return initial_state_transformed
+
     def __call__(self, initial_state=None, nshots=1024, **kwargs):
 
-        self.results:CircuitResult = self.execute(initial_state=initial_state, nshots=nshots, kwargs=kwargs)
+        initial_state_transformed = self.transform_initial_state(initial_state)
+        
+        self.results:CircuitResult = self.execute(initial_state=initial_state_transformed, nshots=nshots, **kwargs)
 
         return self.results
     
 
     
+if __name__ == "__main__":
+    from qibo import gates
+
+    qc = Circuit(2)
+    # qc.add([ gates.H(0) ])
+
+    qc_qec = Qec_Circuit(qc, nqubits=qc.nqubits*3)
+
+    initial_state = np.zeros(2**qc.nqubits, dtype=complex)
+
+    initial_state[0] = 1.0
+
+    result = qc_qec(initial_state=initial_state, nshots=1000)
+
+    print(result)
