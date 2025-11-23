@@ -27,30 +27,30 @@ class Qec_Circuit(Circuit):
         return bitstrings
 
     def transform_initial_state(self, initial_state):
-        bit_strings = self.generate_bitstring_combinations(self.nqubits)
-        num_states_new = len(bit_strings)
+
+        assert(np.linalg.norm(initial_state) - 1.0 < 1e-8), "Initial state must be normalized."
+
         num_states_old = len(initial_state)
         nqubits_original = int(np.log2(num_states_old))
-        print("Original circuit has {} qubits".format(nqubits_original))
 
-        initial_state_transformed = np.zeros(num_states_new, dtype=complex)
+        initial_state_transformed = np.zeros(2**self.nqubits, dtype=complex)
 
-        ratio = int(self.nqubits / nqubits_original)
+        ratio = self.nqubits // nqubits_original
 
-        if initial_state is not None:
-            for i in range(num_states_old):
+        if initial_state is  None:
+            initial_state = np.zeros(num_states_old, dtype=complex)
+            initial_state[0] = 1.0
+        
+        for i in range(num_states_old):
 
-                if i == 0:
-                    print( bit_strings[ 0 ] )
+            b = format(i, f"0{nqubits_original}b")
 
-                else:
-                    if ratio*i <= ratio*(nqubits_original):
-                        
-                        print( bit_strings[ 2**(ratio*i -1) ] )
+            b_transformed = ''
+            for bit in b:
+                b_transformed += f'{bit}'+'0'*(ratio-1)
 
-                    else:
-                        index = (ratio * i -1) % (ratio * nqubits_original)                        
-                        print( bit_strings[ np.power(2, (ratio*nqubits_original -1)) + np.power(2, index*(i-nqubits_original)) ] )
+            initial_state_transformed[int(b_transformed, 2)] = initial_state[i]
+
         return initial_state_transformed
 
     def __call__(self, initial_state=None, nshots=1024, **kwargs):
@@ -62,18 +62,17 @@ class Qec_Circuit(Circuit):
         return self.results
     
 
-    
 if __name__ == "__main__":
     from qibo import gates
 
-    qc = Circuit(2)
+    qc = Circuit(3)
     # qc.add([ gates.H(0) ])
 
     qc_qec = Qec_Circuit(qc, nqubits=qc.nqubits*3)
 
     initial_state = np.zeros(2**qc.nqubits, dtype=complex)
 
-    initial_state[0] = 1.0
+    initial_state[7] = 1.0
 
     result = qc_qec(initial_state=initial_state, nshots=1000)
 
