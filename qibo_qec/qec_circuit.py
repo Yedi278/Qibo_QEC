@@ -6,7 +6,7 @@ class Qec_Circuit(Circuit):
     """A subclass of qibo.Circuit for error corrected circuits."""
 
     def __init__(self, 
-                circuit:Circuit, 
+                circuit:Circuit=None, 
                 nqubits:int=None, 
                 accelerators=None, 
                 density_matrix: bool = False,
@@ -28,18 +28,19 @@ class Qec_Circuit(Circuit):
 
     def transform_initial_state(self, initial_state):
 
-        assert(np.linalg.norm(initial_state) - 1.0 < 1e-8), "Initial state must be normalized."
+        initial_state_transformed = np.zeros(2**self.nqubits, dtype=complex)
+        initial_state_transformed[0] = 1.0        
+
+        if initial_state is None: return initial_state_transformed
+        
+        if(np.abs(np.linalg.norm(initial_state) - 1.0) > 1e-8):
+            print("Initial state is not normalized.")
+            return None
 
         num_states_old = len(initial_state)
         nqubits_original = int(np.log2(num_states_old))
 
-        initial_state_transformed = np.zeros(2**self.nqubits, dtype=complex)
-
         ratio = self.nqubits // nqubits_original
-
-        if initial_state is  None:
-            initial_state = np.zeros(num_states_old, dtype=complex)
-            initial_state[0] = 1.0
         
         for i in range(num_states_old):
 
