@@ -18,6 +18,8 @@ class QEC:
     def apply_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
         """Applies the selected QEC code to the given quantum circuit."""
 
+        self.meas_target = []
+        
         self.encoded_circuit = None
         match self.code_type:
 
@@ -164,15 +166,15 @@ class QEC:
                 
                 case "x":
                     target = gate["_target_qubits"][0]
-                    self.encoded_circuit.add(gates.X(target*3))
-                    self.encoded_circuit.add(gates.X(target*3+1))
-                    self.encoded_circuit.add(gates.X(target*3+2))
-
-                case "z":
-                    target = gate["_target_qubits"][0]
                     self.encoded_circuit.add(gates.Z(target*3))
                     self.encoded_circuit.add(gates.Z(target*3+1))
                     self.encoded_circuit.add(gates.Z(target*3+2))
+
+                case "z":
+                    target = gate["_target_qubits"][0]
+                    self.encoded_circuit.add(gates.X(target*3))
+                    self.encoded_circuit.add(gates.X(target*3+1))
+                    self.encoded_circuit.add(gates.X(target*3+2))
 
                 case "h":
                     target = gate["_target_qubits"][0]
