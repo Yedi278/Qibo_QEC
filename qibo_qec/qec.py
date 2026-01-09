@@ -27,6 +27,8 @@ class QEC:
                 return self.bit_flip_code(circuit, test_gates, correction)
             case "phase_flip":
                 return self.phase_flip_code(circuit, test_gates, correction)
+            case "shor":
+                return self.shor_code(circuit, test_gates, correction)
             case _:
                 raise NotImplementedError(f"Code type {self.code_type} not supported yet.")
 
@@ -42,8 +44,8 @@ class QEC:
         self.wire_names = []
         for i in range(circuit.nqubits):
             self.wire_names.append(f"q_{i}")
-            self.wire_names.append(f"a_{i}0")
-            self.wire_names.append(f"a_{i}1")
+            self.wire_names.append(f"a_{{{i}0}}")
+            self.wire_names.append(f"a_{{{i}1}}")
 
         # Initialize the encoded circuit
         self.encoded_circuit = Qec_Circuit(circuit=circuit, nqubits=self.encoded_nqb, wire_names=self.wire_names)
@@ -138,8 +140,8 @@ class QEC:
         self.wire_names = []
         for i in range(circuit.nqubits):
             self.wire_names.append(f"q_{i}")
-            self.wire_names.append(f"a_{i}0")
-            self.wire_names.append(f"a_{i}1")
+            self.wire_names.append(f"a_{{{i}0}}")
+            self.wire_names.append(f"a_{{{i}1}}")
 
         # Initialize the encoded circuit
         self.encoded_circuit = Qec_Circuit(circuit=circuit, nqubits=self.encoded_nqb, wire_names=self.wire_names)
@@ -210,3 +212,106 @@ class QEC:
 
         return self.encoded_circuit
     
+    def shor_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
+        """Applies the Shor QEC code to the given quantum circuit."""
+        
+        self.encoded_nqb = circuit.nqubits * 9
+        if self.log: print(f"Applying {self.code_type} code to a circuit with {self.encoded_nqb} qubit(s).")
+
+        # Create new wire names for the encoded circuit
+        self.wire_names = []
+        for i in range(circuit.nqubits):
+            self.wire_names.append(f"q_{i}")
+            for j in range(8):
+                self.wire_names.append(f"a_{{ {i}{j} }}")
+
+        # Initialize the encoded circuit
+        self.encoded_circuit = Qec_Circuit(circuit=circuit, nqubits=self.encoded_nqb, wire_names=self.wire_names)
+
+        # Encoding: Apply CNOT and Hadamard gates to encode each qubit into nine qubits
+        for i in range(circuit.nqubits):
+            self.encoded_circuit.add(gates.CNOT(i*9, i*9+1))
+            self.encoded_circuit.add(gates.CNOT(i*9, i*9+2))
+            self.encoded_circuit.add( [ gates.H(i*9), 
+                                        gates.H(i*9+1), 
+                                        gates.H(i*9+2) 
+                                        ] )
+            self.encoded_circuit.add(gates.CNOT(i*9+3, i*9+4))
+            self.encoded_circuit.add(gates.CNOT(i*9+3, i*9+5))
+            self.encoded_circuit.add( [ gates.H(i*9+3), 
+                                        gates.H(i*9+4), 
+                                        gates.H(i*9+5) 
+                                        ] )
+            self.encoded_circuit.add(gates.CNOT(i*9+6, i*9+7))
+            self.encoded_circuit.add(gates.CNOT(i*9+6, i*9+8))
+            self.encoded_circuit.add( [ gates.H(i*9+6), 
+                                        gates.H(i*9+7), 
+                                        gates.H(i*9+8) 
+                                        ] )
+        # add test error gates if provided
+        if test_gates is not None:
+            for gate in test_gates:
+                self.encoded_circuit.add(gate)
+        
+        # Map original gates to the encoded circuit
+        for gate_ in circuit.queue:
+            gate = gate_.__dict__
+
+            match gate["name"]:
+                
+                case "x":
+                    target = gate["_target_qubits"][0]
+                    for j in range(9):
+                        self.encoded_circuit.add(gates.X(target*9 + j))
+
+                case "z":
+                    target = gate["_target_qubits"][0]
+                    for j in range(9):
+                        self.encoded_circuit.add(gates.Z(target*9 + j))
+
+                case "h":
+                    target = gate["_target_qubits"][0]
+                    for j in range(9):
+                        self.encoded_circuit.add(gates.H(target*9 + j))
+
+                case "cx":
+                    control = gate["_control_qubits"][0]
+                    target = gate["_target_qubits"][0]
+                    for j in range(9):
+                        self.encoded_circuit.add(gates.CNOT(control*9 + j, target*9 + j))
+                
+                case "measure":
+                    self.meas_target.append(gate['_target_qubits'][0])  # Store measurement target for later
+
+                case _:
+                    print(f"Gate {gate['name']} not supported in Shor code yet.")
+
+        if correction:
+            for i in range(circuit.nqubits):
+    
+                # Phase-flip correction
+                for j in range(3):
+                    self.encoded_circuit.add( [gates.H(i*9 + j*3), gates.H(i*9 + j*3 +1), gates.H(i*9 + j*3 +2)])
+                    self.encoded_circuit.add(gates.CNOT(i*9 + j*3, i*9 + j*3 +1))
+                    self.encoded_circuit.add(gates.CNOT(i*9 + j*3, i*9 + j*3 +2))
+                    self.encoded_circuit.add(gates.TOFFOLI(i*9 + j*3 +1, i*9 + j*3 +2, i*9 + j*3))
+                
+                # Bit-flip correction
+                self.encoded_circuit.add(gates.CNOT(i*9, i*9+3))
+                self.encoded_circuit.add(gates.CNOT(i*9, i*9+6))
+                self.encoded_circuit.add(gates.TOFFOLI(i*9+3, i*9+6, i*9))
+
+                self.encoded_circuit.add(gates.CNOT(i*9+1, i*9+4))
+                self.encoded_circuit.add(gates.CNOT(i*9+1, i*9+7))
+                self.encoded_circuit.add(gates.TOFFOLI(i*9+4, i*9+7, i*9+1))
+
+                self.encoded_circuit.add(gates.CNOT(i*9+2, i*9+5))
+                self.encoded_circuit.add(gates.CNOT(i*9+2, i*9+8))
+                self.encoded_circuit.add(gates.TOFFOLI(i*9+5, i*9+8, i*9+2))
+        
+        # Final measurements if the original circuit had measurements
+        if self.meas_target:
+            for target in self.meas_target:
+                self.encoded_circuit.add(gates.M(target*9))
+
+        return self.encoded_circuit
