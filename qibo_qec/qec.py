@@ -15,7 +15,7 @@ class QEC:
 
         print(f"Initialized QEC with code type: {self.code_type}")
 
-    def apply_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
+    def apply_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True, post_gates:list=None) -> Qec_Circuit:
         """Applies the selected QEC code to the given quantum circuit."""
 
         self.meas_target = []
@@ -24,17 +24,17 @@ class QEC:
         match self.code_type:
 
             case "bit_flip":
-                return self.bit_flip_code(circuit, test_gates, correction)
+                return self.bit_flip_code(circuit, test_gates, correction, post_gates)
             case "phase_flip":
-                return self.phase_flip_code(circuit, test_gates, correction)
+                return self.phase_flip_code(circuit, test_gates, correction, post_gates)
             case "shor":
-                return self.shor_code(circuit, test_gates, correction)
+                return self.shor_code(circuit, test_gates, correction, post_gates)
             case _:
                 raise NotImplementedError(f"Code type {self.code_type} not supported yet.")
 
         return self.encoded_circuit
 
-    def bit_flip_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
+    def bit_flip_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True, post_gates:list=None) -> Qec_Circuit:
         """Applies the Bit-Flip QEC code to the given quantum circuit."""
 
         self.encoded_nqb = circuit.nqubits * 3
@@ -122,6 +122,10 @@ class QEC:
                 self.encoded_circuit.add(gates.CNOT(i*3, i*3+2))
                 self.encoded_circuit.add(gates.TOFFOLI(i*3+1, i*3+2, i*3))
 
+        if post_gates is not None:
+            for gate in post_gates:
+                self.encoded_circuit.add(gate)
+
         # Final measurements if the original circuit had measurements
         if self.meas_target:
             for target in self.meas_target:
@@ -129,8 +133,7 @@ class QEC:
 
         return self.encoded_circuit
     
-
-    def phase_flip_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
+    def phase_flip_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True, post_gates:list=None) -> Qec_Circuit:
         """Applies the Phase-Flip QEC code to the given quantum circuit."""
 
         self.encoded_nqb = circuit.nqubits * 3
@@ -205,6 +208,10 @@ class QEC:
                 self.encoded_circuit.add(gates.CNOT(i*3, i*3+2))
                 self.encoded_circuit.add(gates.TOFFOLI(i*3+1, i*3+2, i*3))
 
+        if post_gates is not None:
+            for gate in post_gates:
+                self.encoded_circuit.add(gate)
+
         # Final measurements if the original circuit had measurements
         if self.meas_target:
             for target in self.meas_target:
@@ -212,7 +219,7 @@ class QEC:
 
         return self.encoded_circuit
     
-    def shor_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True) -> Qec_Circuit:
+    def shor_code(self, circuit:Circuit, test_gates:list=None, correction:bool=True, post_gates:list=None) -> Qec_Circuit:
         """Applies the Shor QEC code to the given quantum circuit."""
         
         self.encoded_nqb = circuit.nqubits * 9
@@ -309,6 +316,10 @@ class QEC:
                 self.encoded_circuit.add(gates.CNOT(i*9+2, i*9+8))
                 self.encoded_circuit.add(gates.TOFFOLI(i*9+5, i*9+8, i*9+2))
         
+        if post_gates is not None:
+            for gate in post_gates:
+                self.encoded_circuit.add(gate)
+
         # Final measurements if the original circuit had measurements
         if self.meas_target:
             for target in self.meas_target:
