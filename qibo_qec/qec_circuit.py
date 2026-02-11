@@ -64,16 +64,16 @@ class Qec_Circuit(Circuit):
     
 
 if __name__ == "__main__":
+
     from qibo import gates
 
-    qc = Circuit(3)
-    # qc.add([ gates.H(0) ])
+    qc = Circuit(1)
+
+    qc.add(gates.M(0))
 
     qc_qec = Qec_Circuit(qc, nqubits=qc.nqubits*3)
 
-    initial_state = np.zeros(2**qc.nqubits, dtype=complex)
-
-    initial_state[7] = 1.0
+    initial_state = 1/np.sqrt(2) * np.array([1, 1])
 
     result = qc_qec(initial_state=initial_state, nshots=1000)
 
